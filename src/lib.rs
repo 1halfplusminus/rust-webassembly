@@ -1,162 +1,57 @@
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
-
-use wasm_bindgen::JsCast;
-use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
-use winit::{
-    event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-};
-mod utils;
-
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen(start)]
-pub fn start() -> Result<(), JsValue> {
-    utils::set_panic_hook();
-    let event_loop = EventLoop::new();
+pub fn wasm_main() {
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+    main();
+}
 
-    let window = WindowBuilder::new()
-        .with_title("A fantastic window!")
+fn main() {
+    use std::mem::ManuallyDrop;
+
+    use hal::{
+        device::Device,
+        window::{Extent2D, PresentationSurface, Surface},
+        Instance,
+    };
+
+    const APP_NAME: &'static str = "Part 1: Drawing a triangle";
+    const WINDOW_SIZE: [u32; 2] = [512, 512];
+
+    let event_loop = winit::event_loop::EventLoop::new();
+
+    let (logical_window_size, physical_window_size) = {
+        use winit::dpi::{LogicalSize, PhysicalSize};
+        let dpi = event_loop
+            .primary_monitor()
+            .expect("No primary monitor")
+            .scale_factor();
+        let logical: LogicalSize<u32> = WINDOW_SIZE.into();
+        let physical: PhysicalSize<u32> = logical.to_physical(dpi);
+        (logical, physical)
+    };
+
+    let mut surface_extend = Extent2D {
+        width: physical_window_size.width,
+        height: physical_window_size.height,
+    };
+
+    let window = winit::window::WindowBuilder::new()
+        .with_title(APP_NAME)
+        .with_inner_size(logical_window_size)
         .build(&event_loop)
-        .unwrap();
-
-    #[cfg(feature = "web-sys")]
+        .expect("Failed to create window");
+    #[cfg(target_arch = "wasm32")]
     {
-        use winit::platform::web::WindowExtWebSys;
-
-        let canvas = window.canvas();
-
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let body = document.body().unwrap();
-
-        body.append_child(&canvas)
-            .expect("Append canvas to HTML body");
-
-        let context = canvas
-            .get_context("webgl")?
+        use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, Window};
+        web_sys::window()
             .unwrap()
-            .dyn_into::<WebGlRenderingContext>()?;
-        let vert_shader = compile_shader(
-            &context,
-            WebGlRenderingContext::VERTEX_SHADER,
-            r#"
-                attribute vec4 position;
-                void main() {
-                    gl_Position = position;
-                }
-            "#,
-        )?;
-        let frag_shader = compile_shader(
-            &context,
-            WebGlRenderingContext::FRAGMENT_SHADER,
-            r#"
-                void main() {
-                    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-                }
-            "#,
-        )?;
-        let program = link_program(&context, &vert_shader, &frag_shader)?;
-        context.use_program(Some(&program));
-
-        let vertices: [f32; 9] = [-0.7, -0.7, 0.0, 0.7, -0.7, 0.0, 0.0, 0.7, 0.0];
-
-        let buffer = context.create_buffer().ok_or("failed to create buffer")?;
-        context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
-
-        // Note that `Float32Array::view` is somewhat dangerous (hence the
-        // `unsafe`!). This is creating a raw view into our module's
-        // `WebAssembly.Memory` buffer, but if we allocate more pages for ourself
-        // (aka do a memory allocation in Rust) it'll cause the buffer to change,
-        // causing the `Float32Array` to be invalid.
-        //
-        // As a result, after `Float32Array::view` we have to be very careful not to
-        // do any memory allocations before it's dropped.
-        unsafe {
-            let vert_array = js_sys::Float32Array::view(&vertices);
-
-            context.buffer_data_with_array_buffer_view(
-                WebGlRenderingContext::ARRAY_BUFFER,
-                &vert_array,
-                WebGlRenderingContext::STATIC_DRAW,
-            );
-        }
-
-        context.vertex_attrib_pointer_with_i32(0, 3, WebGlRenderingContext::FLOAT, false, 0, 0);
-        context.enable_vertex_attrib_array(0);
-
-        context.clear_color(0.0, 0.0, 0.0, 1.0);
-        context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
-
-        context.draw_arrays(
-            WebGlRenderingContext::TRIANGLES,
-            0,
-            (vertices.len() / 3) as i32,
-        );
-    }
-    event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
-
-        #[cfg(feature = "web-sys")]
-        match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                window_id,
-            } if window_id == window.id() => *control_flow = ControlFlow::Exit,
-            Event::MainEventsCleared => {
-                window.request_redraw();
-            }
-            _ => (),
-        }
-    });
-    Ok(())
-}
-
-pub fn compile_shader(
-    context: &WebGlRenderingContext,
-    shader_type: u32,
-    source: &str,
-) -> Result<WebGlShader, String> {
-    let shader = context
-        .create_shader(shader_type)
-        .ok_or_else(|| String::from("Unable to create shader object"))?;
-    context.shader_source(&shader, source);
-    context.compile_shader(&shader);
-
-    if context
-        .get_shader_parameter(&shader, WebGlRenderingContext::COMPILE_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(shader)
-    } else {
-        Err(context
-            .get_shader_info_log(&shader)
-            .unwrap_or_else(|| String::from("Unknown error creating shader")))
-    }
-}
-
-pub fn link_program(
-    context: &WebGlRenderingContext,
-    vert_shader: &WebGlShader,
-    frag_shader: &WebGlShader,
-) -> Result<WebGlProgram, String> {
-    let program = context
-        .create_program()
-        .ok_or_else(|| String::from("Unable to create shader object"))?;
-
-    context.attach_shader(&program, vert_shader);
-    context.attach_shader(&program, frag_shader);
-    context.link_program(&program);
-
-    if context
-        .get_program_parameter(&program, WebGlRenderingContext::LINK_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(program)
-    } else {
-        Err(context
-            .get_program_info_log(&program)
-            .unwrap_or_else(|| String::from("Unknown error creating program object")))
+            .document()
+            .unwrap()
+            .body()
+            .unwrap()
+            .append_child(&winit::platform::web::WindowExtWebSys::canvas(&window))
+            .unwrap();
     }
 }

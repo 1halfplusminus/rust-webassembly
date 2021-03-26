@@ -8,32 +8,37 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["console_error_panic_hook"]
-web-sys= []
+default = []
+metal = ["gfx-backend-metal"]
+gl = ["gfx-backend-gl"]
+dx11 = ["gfx-backend-dx11"]
+dx12 = ["gfx-backend-dx12"]
+vulkan = ["gfx-backend-vulkan"]
+web_sys= []
+unstable = []
 
 [dependencies]
-wasm-bindgen = "0.2.72"
 
-# The `console_error_panic_hook` crate provides better debugging of panics by
-# logging them with `console.error`. This is great for development, but requires
-# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
-# code size when deploying.
-console_error_panic_hook = { version = "0.1.6", optional = true }
-
-# `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
-# compared to the default allocator's ~10K. It is slower than the default
-# allocator, however.
-#
-# Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
-wee_alloc = { version = "0.4.5", optional = true }
-
-js-sys = "0.3.49"
-
-winit = {version="0.24.0", features = ["web-sys"]}
+winit = { version = "0.24", features = ["web-sys"] }
 
 instant = "0.1"
 
-[dependencies.web_sys]
+glow= "0.8.1"
+
+hal = {  version = "0.7", package = "gfx-hal" }
+
+auxil = { version = "0.8", package = "gfx-auxil" }
+
+gfx-backend-empty = { version = "0.7" }
+
+#"shaderc = "=0.6.2"
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = { version = "0.1.6"}
+console_log = "0.1.2"
+wee_alloc = { version = "0.4.5", optional = true }
+js-sys = "0.3.49"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
 package="web-sys"
 version = "0.3.4"
 features = [
@@ -48,9 +53,42 @@ features = [
 ]
 
 
+
+[dependencies.gfx-backend-vulkan]
+version = "0.7"
+optional = true
+git = "https://github.com/gfx-rs/gfx"
+
 [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
 version = "0.2.45"
+package="wasm-bindgen"
+
+[target.'cfg(all(unix, not(target_os = "ios"), not(target_os = "macos"), not(target_os = "android")))'.dependencies.gfx-backend-gl]
+version = "0.7"
+features = ["cross"]
 optional = true
+git = "https://github.com/gfx-rs/gfx"
+
+[target.'cfg(all(target_arch = "wasm32"))'.dependencies.gfx-backend-gl]
+version = "0.7"
+optional = true
+git = "https://github.com/gfx-rs/gfx"
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies.gfx-backend-metal]
+features = ["cross"]
+version = "=0.7"
+optional = true
+git = "https://github.com/gfx-rs/gfx"
+
+[target.'cfg(windows)'.dependencies.gfx-backend-dx11]
+version = "0.7"
+optional = true
+git = "https://github.com/gfx-rs/gfx"
+
+[target.'cfg(windows)'.dependencies.gfx-backend-dx12]
+version = "0.7"
+optional = true
+git = "https://github.com/gfx-rs/gfx"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"
