@@ -5,7 +5,7 @@
     "[javascript]": {
         "editor.formatOnSave": true        
     },
-    "rust-analyzer.cargo.target": "wasm32",
+
     "rust.show_warnings": true,
     "rust.all_targets": true,
     "rust.rust-analyzer": {

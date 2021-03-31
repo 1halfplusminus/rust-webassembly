@@ -1,21 +1,18 @@
-<div align="center">
+# Prototype Game Engine
 
-  <h1><code>wasm-pack-template</code></h1>
+## wasm-pack-template
 
-  <strong>A template for kick starting a Rust and WebAssembly project using <a href="https://github.com/rustwasm/wasm-pack">wasm-pack</a>.</strong>
+**A template for kick starting A template for kick starting a Rust and WebAssembly project using**.
 
-  <p>
-    <a href="https://travis-ci.org/rustwasm/wasm-pack-template"><img src="https://img.shields.io/travis/rustwasm/wasm-pack-template.svg?style=flat-square" alt="Build Status" /></a>
-  </p>
+[wasm-pack](https://github.com/rustwasm/wasm-pack)
 
-  <h3>
-    <a href="https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html">Tutorial</a>
-    <span> | </span>
-    <a href="https://discordapp.com/channels/442252698964721669/443151097398296587">Chat</a>
-  </h3>
+[Tutorial]
 
-  <sub>Built with 🦀🕸 by <a href="https://rustwasm.github.io/">The Rust and WebAssembly Working Group</a></sub>
-</div>
+Built with 🦀🕸 by [RustWasm] The Rust and WebAssembly Working Group
+
+[Tutorial]: https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html
+
+[RustWasm]: https://rustwasm.github.io/
 
 ## About
 
@@ -36,14 +33,14 @@ templates and usages of `wasm-pack`.
 
 [Learn more about `cargo generate` here.](https://github.com/ashleygwilliams/cargo-generate)
 
-```
+```sh
 cargo generate --git https://github.com/rustwasm/wasm-pack-template.git --name my-project
 cd my-project
 ```
 
 ### Rust's
 
-```
+```sh
 
 rustup toolchain install nightly
 rustup default nightly
@@ -54,20 +51,48 @@ rustup target add wasm32-unknown-unknown
 
 ### 🛠️ Build with `wasm-pack build`
 
-```
+```sh
 wasm-pack build
 ```
 
 ### 🔬 Test in Headless Browsers with `wasm-pack test`
 
-```
+```sh
 wasm-pack test --headless --firefox
 ```
 
 ### 🎁 Publish to NPM with `wasm-pack publish`
 
-```
+```sh
 wasm-pack publish
+```
+
+## Android
+
+[Android Doc](https://github.com/rust-windowing/android-ndk-rs)
+
+### Install sdk
+
+```sh
+
+sudo apt install android-sdk google-android-ndk-installer
+export ANDROID_SDK_ROOT="/usr/lib/android-sdk"
+export ANDROID_NDK_ROOT="/usr/lib/android-ndk"
+export PATH="${PATH}:${ANDROID_SDK_ROOT}/tools/:${ANDROID_SDK_ROOT}/platform-tools/"
+```
+
+### Build
+
+#### build image
+
+```sh
+
+docker build . -t aarch64-linux-android:latest -f ./android.Dockerfile
+
+```
+
+```sh
+RUST_BACKTRACE=1 cross build --target aarch64-linux-android
 ```
 
 ## 🔋 Batteries Included
