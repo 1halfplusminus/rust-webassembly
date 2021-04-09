@@ -6,9 +6,18 @@ pub fn wasm_main() {
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     main();
 }
+use instant;
+
 #[cfg(target_arch = "android")]
 use ndk_glue;
 use std::iter;
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+struct PushConstants {
+    color: [f32; 4],
+    pos: [f32; 2],
+    scale: [f32; 2],
+}
 
 #[cfg_attr(target_os = "android", ndk_glue::main(backtrace = "on"))]
 pub fn main() {
@@ -17,8 +26,7 @@ pub fn main() {
 
     #[cfg(not(target_arch = "wasm32"))]
     env_logger::init();
-    use std::mem::ManuallyDrop;
-
+    #[allow(unused_imports)]
     use gfx_hal::{
         adapter::{Adapter, MemoryType},
         buffer, command,
@@ -29,6 +37,7 @@ pub fn main() {
         queue::QueueGroup,
         window, Backend,
     };
+    use std::mem::ManuallyDrop;
 
     const APP_NAME: &'static str = "Part 1: Drawing a triangle";
     const WINDOW_SIZE: [u32; 2] = [512, 512];
@@ -59,6 +68,7 @@ pub fn main() {
 
     #[cfg(target_arch = "wasm32")]
     {
+        #[allow(unused_imports)]
         use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader, Window};
         web_sys::window()
             .unwrap()
@@ -88,8 +98,6 @@ pub fn main() {
     };
 
     let (device, mut queue_group) = {
-        use gfx_hal::queue::QueueFamily;
-
         let queue_family = adapter
             .queue_families
             .iter()
@@ -99,8 +107,6 @@ pub fn main() {
             .expect("No compatible queue family found");
 
         let mut gpu = unsafe {
-            use gfx_hal::adapter::PhysicalDevice;
-
             adapter
                 .physical_device
                 .open(&[(queue_family, &[1.0])], gfx_hal::Features::empty())
@@ -171,12 +177,18 @@ pub fn main() {
     };
 
     let pipeline_layout = unsafe {
+        use gfx_hal::pso::ShaderStageFlags;
+
+        let push_constant_bytes = std::mem::size_of::<PushConstants>() as u32;
         device
-            .create_pipeline_layout(iter::empty(), iter::empty())
+            .create_pipeline_layout(
+                iter::empty(),
+                iter::once((ShaderStageFlags::VERTEX, 0..push_constant_bytes)),
+            )
             .expect("Out of memory")
     };
-    let vertex_shader = include_bytes!("shaders/part-1.vert.spv");
-    let fragment_shader = include_bytes!("shaders/part-1.frag.spv");
+    let vertex_shader = include_bytes!("shaders/part-2.vert.spv");
+    let fragment_shader = include_bytes!("shaders/part-2.frag.spv");
     //Create a pipeline with the given layout and shadaers
     unsafe fn make_pipeline<B: gfx_hal::Backend>(
         device: &B::Device,
@@ -322,6 +334,7 @@ pub fn main() {
             submission_complete_fence,
             rendering_complete_semaphore,
         }));
+    let start_time = instant::Instant::now();
     event_loop.run(move |event, _, control_flow| {
         use winit::event::{Event, WindowEvent};
         use winit::event_loop::ControlFlow;
@@ -348,9 +361,24 @@ pub fn main() {
             winit::event::Event::RedrawEventsCleared => {
                 let res: &mut Resources<_> = &mut resource_holder.0;
                 let render_pass = &res.render_passes[0];
+                let pipeline_layout = &res.pipeline_layouts[0];
                 let pipeline = &res.pipelines[0];
 
+                let anim = start_time.elapsed().as_secs_f32().sin();
+
+                let small = [0.33, 0.33];
+
+                let triangles = &[
+                    // red triangles
+                    PushConstants {
+                        color: [1.0, 0.0, 0.0, 1.0],
+                        pos: [-0.5, -0.5],
+                        scale: small,
+                    },
+                ];
+
                 unsafe {
+                    #[allow(unused_variables)]
                     let render_timeout_ns = 1_000_000_000;
                     #[cfg(not(target_arch = "wasm32"))]
                     {
@@ -434,9 +462,7 @@ pub fn main() {
                 };
 
                 unsafe {
-                    use gfx_hal::command::{
-                        ClearColor, ClearValue, CommandBufferFlags, SubpassContents,
-                    };
+                    use gfx_hal::command::{CommandBufferFlags, SubpassContents};
                     command_buffer.begin_primary(CommandBufferFlags::ONE_TIME_SUBMIT);
 
                     command_buffer.set_viewports(0, iter::once(viewport.clone()));

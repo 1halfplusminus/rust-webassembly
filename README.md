@@ -67,6 +67,14 @@ wasm-pack test --headless --firefox
 wasm-pack publish
 ```
 
+## Compile shader
+
+```sh
+
+./compile-shader.sh
+
+```
+
 ## Android
 
 [Android Doc](https://github.com/rust-windowing/android-ndk-rs)

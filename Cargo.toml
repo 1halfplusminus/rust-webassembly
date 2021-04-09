@@ -26,6 +26,8 @@ serde = { version = "~1.0.115", features = ["derive"] }
 
 log=""
 
+instant = "0.1"
+
 [target.'cfg(target_os = "android")']
 ndk = "0.3"
 ndk-sys = "0.2.0"
