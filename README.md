@@ -1,4 +1,4 @@
-# Prototype Game Engine
+# Play with game engine idea on rust
 
 ## wasm-pack-template
 
@@ -46,7 +46,7 @@ rustup toolchain install nightly
 rustup default nightly
 rustup override set nightly
 rustup target add wasm32-unknown-unknown
-
+rustup target add aarch64-linux-android
 ```
 
 ### 🛠️ Build with `wasm-pack build`
@@ -92,8 +92,14 @@ docker build . -t aarch64-linux-android:latest -f ./android.Dockerfile
 ```
 
 ```sh
-RUST_BACKTRACE=1 cross build --target aarch64-linux-android
+RUST_BACKTRACE=1 cross build --target aarch64-linux-android 
+## OR
+cargo +nightly build --target aarch64-linux-android
 ```
+
+### Ressource
+
+[TEMPLATE ANDROID PROEJECT](https://github.com/BrainiumLLC/cargo-mobile/tree/master/templates/platforms/android-studio)
 
 ## 🔋 Batteries Included
 

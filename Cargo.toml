@@ -6,8 +6,9 @@ edition = "2018"
 publish = false
 
 [lib]
-crate-type = ["cdylib", "rlib","dylib"]
-path= "src/main.rs"
+crate-type = [ "cdylib", "rlib"]
+path= "src/lib.rs"
+name= "rust"
 
 [[bin]]
 name = "quad"
@@ -24,6 +25,12 @@ auxil = {  package = "gfx-auxil",version="0.8.0", git = "https://github.com/gfx-
 serde = { version = "~1.0.115", features = ["derive"] }
 
 log=""
+
+[target.'cfg(target_os = "android")']
+ndk = "0.3"
+ndk-sys = "0.2.0"
+jni = "0.18.0"
+ndk-glue = "0.3"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.8"
